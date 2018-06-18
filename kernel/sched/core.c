@@ -1135,7 +1135,7 @@ static const struct cpumask *get_adjusted_cpumask(const struct task_struct *p,
 		cpumask_equal(req_mask, cpu_all_mask))
 		return cpu_lp_mask;
 
-	return req_mask;
+ 	return req_mask;
 }
 
 void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
