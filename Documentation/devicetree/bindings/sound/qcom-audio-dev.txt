@@ -668,6 +668,10 @@ Example:
 			<11 604 32505856 325058560>;
 	};
 
+	audio_apr: qcom,msm-audio-apr {
+		compatible = "qcom,msm-audio-apr";
+	};
+
 	wcd9xxx_intc: wcd9xxx-irq {
 		compatible = "qcom,wcd9xxx-irq";
 		interrupt-controller;
