@@ -92,7 +92,6 @@ static int sde_hw_pp_setup_te_config(struct sde_hw_pingpong *pp,
 			 te->sync_threshold_start));
 	SDE_REG_WRITE(c, PP_SYNC_WRCOUNT,
 			(te->start_pos + te->sync_threshold_start + 1));
-	SDE_EVT32(pp->idx - PINGPONG_0, cfg);
 
 	return 0;
 }
@@ -268,20 +267,19 @@ static int sde_hw_pp_enable_te(struct sde_hw_pingpong *pp, bool enable)
 	return 0;
 }
 
-static u32 sde_hw_pp_connect_external_te(struct sde_hw_pingpong *pp,
+static int sde_hw_pp_connect_external_te(struct sde_hw_pingpong *pp,
 		bool enable_external_te)
 {
 	struct sde_hw_blk_reg_map *c = &pp->hw;
 	u32 cfg;
-	u32 orig;
+	int orig;
 
 	if (!pp)
 		return -EINVAL;
 
 	c = &pp->hw;
 	cfg = SDE_REG_READ(c, PP_SYNC_CONFIG_VSYNC);
-
-	orig = cfg;
+	orig = (bool)(cfg & BIT(20));
 	if (enable_external_te)
 		cfg |= BIT(20);
 	else

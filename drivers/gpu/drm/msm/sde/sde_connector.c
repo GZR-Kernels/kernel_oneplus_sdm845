@@ -68,7 +68,6 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 	struct sde_connector *c_conn;
 	int bl_lvl;
 	struct drm_event event;
-	int rc = 0;
 
 	brightness = bd->props.brightness;
 
@@ -94,10 +93,10 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 		event.length = sizeof(u32);
 		msm_mode_object_event_notify(&c_conn->base.base,
 				c_conn->base.dev, &event, (u8 *)&brightness);
-		rc = c_conn->ops.set_backlight(c_conn->display, bl_lvl);
+		c_conn->ops.set_backlight(c_conn->display, bl_lvl);
 	}
 
-	return rc;
+	return 0;
 }
 
 static int sde_backlight_device_get_brightness(struct backlight_device *bd)

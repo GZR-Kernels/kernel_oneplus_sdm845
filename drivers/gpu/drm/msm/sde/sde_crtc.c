@@ -3275,8 +3275,7 @@ static void sde_crtc_atomic_begin(struct drm_crtc *crtc,
 	 * smmu state is attached,
 	 */
 	if ((smmu_state->state != DETACHED) &&
-			(smmu_state->state != DETACH_ALL_REQ) &&
-			sde_crtc->enabled)
+			(smmu_state->state != DETACH_ALL_REQ))
 		sde_cp_crtc_apply_properties(crtc);
 
 	/*
