@@ -7490,7 +7490,6 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu,
 	schedstat_inc(p->se.statistics.nr_wakeups_secb_attempts);
 	schedstat_inc(this_rq()->eas_stats.secb_attempts);
 
-	rcu_read_lock();
 	boosted = task_is_boosted(p);
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 	prefer_idle = schedtune_prefer_idle(p) > 0;
@@ -7514,7 +7513,7 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu,
 	if (bias_to_prev_cpu(p, rtg_target)) {
 		target_cpu = prev_cpu;
 		fastpath = PREV_CPU_BIAS;
-		goto unlock;
+		goto out;
 	}
 
 	sd = rcu_dereference(per_cpu(sd_ea, prev_cpu));
@@ -7600,8 +7599,7 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu,
 	schedstat_inc(p->se.statistics.nr_wakeups_secb_count);
 	schedstat_inc(this_rq()->eas_stats.secb_count);
 
-unlock:
-	rcu_read_unlock();
+out:
 	trace_sched_task_util(p, next_cpu, backup_cpu, target_cpu,
 			      fbt_env.need_idle, fastpath,
 			      fbt_env.placement_boost, rtg_target ?
