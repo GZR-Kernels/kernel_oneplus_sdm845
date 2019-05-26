@@ -1144,15 +1144,15 @@ static void sdhci_finish_data(struct sdhci_host *host)
 	host->data = NULL;
 	host->data_cmd = NULL;
 
-        /*
-         * The controller needs a reset of internal state machines upon error
-         * conditions.
-         */
-        if (data->error) {
-                if (!host->cmd || host->cmd == data_cmd)
-                        sdhci_do_reset(host, SDHCI_RESET_CMD);
-                sdhci_do_reset(host, SDHCI_RESET_DATA);
-        }
+	/*
+	 * The controller needs a reset of internal state machines upon error
+	 * conditions.
+	 */
+	if (data->error) {
+		if (!host->cmd || host->cmd == data_cmd)
+			sdhci_do_reset(host, SDHCI_RESET_CMD);
+		sdhci_do_reset(host, SDHCI_RESET_DATA);
+	}
 
 	MMC_TRACE(host->mmc, "%s: 0x24=0x%08x\n", __func__,
 		sdhci_readl(host, SDHCI_PRESENT_STATE));
@@ -3422,7 +3422,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
 			if ((host->quirks2 & SDHCI_QUIRK2_SLOW_INT_CLR) &&
 				(host->clock <= 400000))
 				udelay(40);
-                        sdhci_cmd_irq(host, intmask & SDHCI_INT_CMD_MASK, &intmask);
+			sdhci_cmd_irq(host, intmask & SDHCI_INT_CMD_MASK, &intmask);
 		}
 
 		if (intmask & SDHCI_INT_DATA_MASK) {
