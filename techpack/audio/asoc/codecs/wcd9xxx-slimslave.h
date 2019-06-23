@@ -15,6 +15,7 @@
 
 #include <linux/slimbus/slimbus.h>
 #include "core.h"
+
 /*2018/06/14 @bsp add for support notify audio adapter switch*/
 #include <linux/notifier.h>
 
