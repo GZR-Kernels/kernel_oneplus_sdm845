@@ -1684,7 +1684,7 @@ static int tavil_codec_set_i2s_tx_ch(struct snd_soc_dapm_widget *w,
 
 		snd_soc_update_bits(codec,
 				    WCD934X_DATA_HUB_I2S_TX0_CFG,
-				    0x0C, 0x01);
+				    0x0C, 0x04);
 
 		snd_soc_update_bits(codec,
 				    WCD934X_DATA_HUB_I2S_TX1_0_CFG,
@@ -2185,6 +2185,18 @@ static void tavil_codec_clear_anc_tx_hold(struct tavil_priv *tavil)
 		tavil_codec_set_tx_hold(tavil->codec, WCD934X_ANA_AMIC4, false);
 }
 
+
+static void tavil_ocp_control(struct snd_soc_codec *codec, bool enable)
+{
+	if (enable) {
+		snd_soc_update_bits(codec, WCD934X_HPH_OCP_CTL, 0x10, 0x10);
+		snd_soc_update_bits(codec, WCD934X_RX_OCP_CTL, 0x0F, 0x02);
+	} else {
+		snd_soc_update_bits(codec, WCD934X_RX_OCP_CTL, 0x0F, 0x0F);
+		snd_soc_update_bits(codec, WCD934X_HPH_OCP_CTL, 0x10, 0x00);
+	}
+}
+
 static int tavil_codec_enable_hphr_pa(struct snd_soc_dapm_widget *w,
 				      struct snd_kcontrol *kcontrol,
 				      int event)
@@ -2198,6 +2210,7 @@ static int tavil_codec_enable_hphr_pa(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
+		tavil_ocp_control(codec, false);
 		if (TAVIL_IS_1_0(tavil->wcd9xxx))
 			snd_soc_update_bits(codec, WCD934X_HPH_REFBUFF_LP_CTL,
 					    0x06, (0x03 << 1));
@@ -2294,8 +2307,10 @@ static int tavil_codec_enable_hphr_pa(struct snd_soc_dapm_widget *w,
 			ret = tavil_codec_enable_anc(w, kcontrol, event);
 		}
 		tavil_codec_override(codec, tavil->hph_mode, event);
+		tavil_ocp_control(codec, true);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
+		tavil_ocp_control(codec, false);
 		blocking_notifier_call_chain(&tavil->mbhc->notifier,
 					     WCD_EVENT_PRE_HPHR_PA_OFF,
 					     &tavil->mbhc->wcd_mbhc);
@@ -2334,6 +2349,7 @@ static int tavil_codec_enable_hphr_pa(struct snd_soc_dapm_widget *w,
 					    WCD934X_CDC_RX2_RX_PATH_CFG0,
 					    0x10, 0x00);
 		}
+		tavil_ocp_control(codec, true);
 		break;
 	};
 
@@ -2353,6 +2369,7 @@ static int tavil_codec_enable_hphl_pa(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
+		tavil_ocp_control(codec, false);
 		if (TAVIL_IS_1_0(tavil->wcd9xxx))
 			snd_soc_update_bits(codec, WCD934X_HPH_REFBUFF_LP_CTL,
 					    0x06, (0x03 << 1));
@@ -2446,8 +2463,10 @@ static int tavil_codec_enable_hphl_pa(struct snd_soc_dapm_widget *w,
 			ret = tavil_codec_enable_anc(w, kcontrol, event);
 		}
 		tavil_codec_override(codec, tavil->hph_mode, event);
+		tavil_ocp_control(codec, true);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
+		tavil_ocp_control(codec, false);
 		blocking_notifier_call_chain(&tavil->mbhc->notifier,
 					     WCD_EVENT_PRE_HPHL_PA_OFF,
 					     &tavil->mbhc->wcd_mbhc);
@@ -2487,6 +2506,7 @@ static int tavil_codec_enable_hphl_pa(struct snd_soc_dapm_widget *w,
 			snd_soc_update_bits(codec,
 				WCD934X_CDC_RX1_RX_PATH_CFG0, 0x10, 0x00);
 		}
+		tavil_ocp_control(codec, true);
 		break;
 	};
 
@@ -4191,10 +4211,8 @@ static void tavil_codec_set_tx_hold(struct snd_soc_codec *codec,
 	case WCD934X_ANA_AMIC1:
 	case WCD934X_ANA_AMIC2:
 		snd_soc_update_bits(codec, WCD934X_ANA_AMIC2, mask, val);
-        if(amic_reg == WCD934X_ANA_AMIC2) {
-            pr_err("begin to sleep 150 ms\n");
-            usleep_range(150*1000, 150*1010);
-        }
+		pr_err("begin to sleep 150 ms\n");
+		usleep_range(150*1000, 150*1010);
 		break;
 	case WCD934X_ANA_AMIC3:
 	case WCD934X_ANA_AMIC4:
@@ -8904,6 +8922,8 @@ static struct snd_soc_dai_driver tavil_i2s_dai[] = {
 
 static void tavil_codec_power_gate_digital_core(struct tavil_priv *tavil)
 {
+	if (!tavil)
+		return;
 	mutex_lock(&tavil->power_lock);
 	dev_dbg(tavil->dev, "%s: Entering power gating function, %d\n",
 		__func__, tavil->power_active_ref);
@@ -9469,7 +9489,7 @@ static const struct tavil_reg_mask_val tavil_codec_reg_i2c_defaults[] = {
 	{WCD934X_DATA_HUB_RX2_CFG, 0x03, 0x01},
 	{WCD934X_DATA_HUB_RX3_CFG, 0x03, 0x01},
 	{WCD934X_DATA_HUB_I2S_TX0_CFG, 0x01, 0x01},
-	{WCD934X_DATA_HUB_I2S_TX0_CFG, 0x04, 0x01},
+	{WCD934X_DATA_HUB_I2S_TX0_CFG, 0x04, 0x04},
 	{WCD934X_DATA_HUB_I2S_TX1_0_CFG, 0x01, 0x01},
 	{WCD934X_DATA_HUB_I2S_TX1_1_CFG, 0x05, 0x05},
 	{WCD934X_CHIP_TIER_CTRL_ALT_FUNC_EN, 0x1, 0x1},
@@ -10064,14 +10084,7 @@ done:
 	mutex_unlock(&tavil->codec_mutex);
 	return ret;
 }
-/* tony.liu@Multimedia.Audio,2017.12.21 add headset plug type detect */
-static const unsigned int plug_type_extcon_tab[] = {
-	EXTCON_PLUG_TYPE_NONE,             //19
-	EXTCON_PLUG_TYPE_HEADSET,          //20
-	EXTCON_PLUG_TYPE_HEADPHONE,        //21
-	EXTCON_PLUG_TYPE_GND_MIC_SWAP,     //22
-	EXTCON_NONE,                       //0
-};
+
 static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 {
 	struct wcd9xxx *control;
@@ -10127,16 +10140,6 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 		goto err_hwdep;
 	}
 
-/* tony.liu@Multimedia.Audio,2017.12.21 add headset plug type detect */
-	tavil->mbhc->wcd_mbhc.wcd934x_edev = devm_extcon_dev_allocate(codec->dev,
-			plug_type_extcon_tab);
-	tavil->mbhc->wcd_mbhc.wcd934x_edev->name = "soc:h2w";
-	ret = devm_extcon_dev_register(codec->dev, tavil->mbhc->wcd_mbhc.wcd934x_edev);
-	if (ret < 0)
-		goto err_hwdep;
-
-	extcon_set_state(tavil->mbhc->wcd_mbhc.wcd934x_edev, EXTCON_PLUG_TYPE_NONE, 1);
-	pr_err(".....wcd934x_edev probe success!\n");
 	tavil->codec = codec;
 	for (i = 0; i < COMPANDER_MAX; i++)
 		tavil->comp_enabled[i] = 0;
@@ -10270,8 +10273,6 @@ static int tavil_soc_codec_remove(struct snd_soc_codec *codec)
 	struct wcd9xxx *control;
 	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(codec);
 
-/* tony.liu@Multimedia.Audio,2017.12.21 add headset plug type detect */
-	extcon_dev_unregister(tavil->mbhc->wcd_mbhc.wcd934x_edev);
 	control = dev_get_drvdata(codec->dev->parent);
 	devm_kfree(codec->dev, control->rx_chs);
 	/* slimslave deinit in wcd core looks for this value */
@@ -11064,6 +11065,7 @@ static struct platform_driver tavil_codec_driver = {
 #ifdef CONFIG_PM
 		.pm = &tavil_pm_ops,
 #endif
+		.suppress_bind_attrs = true,
 	},
 };
 
